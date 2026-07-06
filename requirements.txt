@@ -1,0 +1,8 @@
+beautifulsoup4
+python-docx
+requests
+tqdm
+
+# Optional for --with-ner
+#torch
+#transformers

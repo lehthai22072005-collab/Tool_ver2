@@ -1,0 +1,11 @@
+.venv/
+venv/
+build/
+dist/
+logs/
+output/
+__pycache__/
+*.pyc
+.idea/
+.vscode/
+crawler_vbpl.spec

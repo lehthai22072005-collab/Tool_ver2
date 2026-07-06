@@ -1,0 +1,22 @@
+# Byte-compiled / Caches
+__pycache__/
+*.py[cod]
+
+# Virtual Environments
+venv/
+.venv/
+env/
+
+# PyInstaller / Build tools
+build/
+dist/
+*.spec
+
+# Data & Logs
+output/
+logs/
+*.log
+
+# IDE files (VSCode, PyCharm)
+.idea/
+.vscode/

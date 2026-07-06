@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  vbpl-crawler:
+    build: .
+    container_name: vbpl_crawler_container
+    # 2 DÒNG DƯỚI LÀ BẮT BUỘC: Để kích hoạt gõ bàn phím chọn Menu hỏi đáp
+    stdin_open: true
+    tty: true
+    # Đồng bộ dữ liệu cào được từ Docker ra thẳng máy thật của bạn
+    volumes:
+      - ./output:/app/output
+      - ./logs:/app/logs
