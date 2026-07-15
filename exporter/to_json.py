@@ -13,14 +13,6 @@ def convert_to_json(vb: VBDocument, out_dir: Path) -> tuple[Path, Path]:
             "item_id": getattr(vb, "item_id", ""),
             "url_toanvan": getattr(vb, "url_toanvan", getattr(vb, "url", "")),
             "title": vb.title,
-            "doc_number": vb.doc_number,
-            "doc_type": vb.doc_type,
-            "issue_date": vb.issue_date,
-            "effective_date": vb.effective_date,
-            "issuer": vb.issuer,
-            "signer": vb.signer,
-            "signer_title": vb.signer_title,
-            "status": vb.status,
         },
         "attributes": {
             "so_hieu": vb.doc_number,
@@ -31,7 +23,9 @@ def convert_to_json(vb: VBDocument, out_dir: Path) -> tuple[Path, Path]:
             "loai_van_ban": vb.doc_type or "--",
             "ngay_ban_hanh": vb.issue_date or "--",
             "ngay_co_hieu_luc": vb.effective_date or "--",
+            "ngay_het_hieu_luc": getattr(vb, "expiration_date", "") or "--",
             "nguoi_ky": vb.signer or "--",
+            "chuc_danh_nguoi_ky": vb.signer_title or "--",
         }
     }
     thuoc_tinh_path.write_text(json.dumps(thuoc_tinh_payload, ensure_ascii=False, indent=2), encoding="utf-8")
