@@ -2,6 +2,7 @@ import re
 import time
 from dataclasses import asdict, dataclass, field as dc_field
 
+from typing import List, Dict, Optional
 import requests
 from bs4 import BeautifulSoup
 from loguru import logger
@@ -32,10 +33,10 @@ class VBDocument:
     field: str = ""
     scope: str = ""
     status: str = ""
-    issuing_people: list[dict] = dc_field(default_factory=list)
+    issuing_people: List[dict] = dc_field(default_factory=list)
     full_text: str = ""
-    articles: list[dict] = dc_field(default_factory=list)
-    related_docs: list[dict] = dc_field(default_factory=list)
+    articles: List[dict] = dc_field(default_factory=list)
+    related_docs: List[dict] = dc_field(default_factory=list)
     signature: dict = dc_field(default_factory=dict)
     relationship_graph: dict = dc_field(default_factory=dict)
     content_html: str = ""

@@ -11,6 +11,7 @@ ENV PYTHONUNBUFFERED=1
 COPY requirements.txt .
 
 # Nâng cấp pip và cài đặt toàn bộ thư viện
+RUN apt-get update && apt-get install -y pandoc && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
