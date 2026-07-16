@@ -38,6 +38,7 @@ class VBDocument:
     related_docs: list[dict] = dc_field(default_factory=list)
     signature: dict = dc_field(default_factory=dict)
     relationship_graph: dict = dc_field(default_factory=dict)
+    content_html: str = ""
 
     @property
     def url(self) -> str:
@@ -109,42 +110,58 @@ def _issuing_people(data: dict) -> list[dict]:
 def _html_to_text(html: str) -> str:
     if not html:
         return ""
-    soup = BeautifulSoup(html, "html.parser")
-    for tag in soup(["script", "style"]):
-        tag.decompose()
-    lines = []
-    for block in soup.select("p, li, h1, h2, h3, h4, h5, h6"):
-        text = block.get_text(" ", strip=True)
-        text = re.sub(r"\s+", " ", text).strip()
-        if text:
-            lines.append(text)
-    if not lines:
-        text = soup.get_text(" ", strip=True)
-        return re.sub(r"\s+", " ", text).strip()
 
+    soup = BeautifulSoup(html, "html.parser")
+
+    # [LỚP BẢO VỆ 1]: Cơ chế Fallback (Dự phòng)
+    # Thử tìm class 'preview-content' (với các văn bản form mới).
+    # Nếu KHÔNG CÓ (do văn bản quá cũ hoặc cấu trúc web khác), tự động lấy toàn bộ trang để không bị mất dữ liệu.
+    content_div = soup.find(class_="preview-content")
+    target_soup = content_div if content_div else soup
+
+    # [LỚP BẢO VỆ 2]: Dọn rác cấp độ sâu
+    # Chặn đứng mọi thẻ rác có thể phá hỏng format (script, style, iframe, meta, form, nút bấm...)
+    for tag in target_soup(["script", "style", "noscript", "meta", "link", "iframe", "button", "form"]):
+        tag.decompose()
+
+    # Chuyển đổi thẻ ngắt dòng trực tiếp
+    for br in target_soup.find_all("br"):
+        br.replace_with("\n")
+
+    # [LỚP BẢO VỆ 3]: Ép xuống dòng bằng Danh sách Thẻ khối (Block-level) toàn diện
+    # Tôi đã bổ sung thêm table, ul, ol, blockquote để quét sạch mọi cấu trúc dữ liệu bảng biểu/danh sách.
+    block_tags = ["p", "div", "tr", "li", "h1", "h2", "h3", "h4", "h5", "h6", "table", "ul", "ol", "blockquote"]
+    for block in target_soup.find_all(block_tags):
+        block.append("\n")
+
+    # Rút trích text (dùng dấu cách " " làm vách ngăn an toàn cho các thẻ nằm ngang như span, b, i, a)
+    raw_text = target_soup.get_text(separator=" ", strip=True)
+
+    # Làm sạch khoảng trắng và các dòng trống vô nghĩa
+    lines = []
+    for line in raw_text.split('\n'):
+        clean_line = re.sub(r"\s+", " ", line).strip()
+        if clean_line:
+            lines.append(clean_line)
+
+    # [LỚP BẢO VỆ 4]: Khử nhiễu các dòng trùng lặp liên tiếp
     deduped = []
     for line in lines:
         if deduped and deduped[-1] == line:
             continue
         deduped.append(line)
+
     return "\n".join(deduped)
 
 
 def _html_lines(html: str) -> list[str]:
+    """
+    Kế thừa toàn bộ 4 lớp bảo vệ từ _html_to_text.
+    Giúp việc bóc tách Người ký / Chức vụ cho file JSON đạt độ chính xác tối đa.
+    """
     if not html:
         return []
-    soup = BeautifulSoup(html, "html.parser")
-    for tag in soup(["script", "style"]):
-        tag.decompose()
-
-    lines = []
-    for block in soup.select("p, td, th"):
-        text = block.get_text(" ", strip=True)
-        text = re.sub(r"\s+", " ", text).strip()
-        if text and text not in lines[-3:]:
-            lines.append(text)
-    return lines
-
+    return _html_to_text(html).split('\n')
 
 def _is_signature_title(line: str) -> bool:
     text = re.sub(r"\s+", " ", line or "").strip().upper()
@@ -322,14 +339,22 @@ def _related_docs(data: dict) -> list[dict]:
         )
     return docs
 
-
 RELATION_TYPE_LABELS = {
-    "1": "Quan hệ loại 1",
-    "3": "Văn bản căn cứ / dẫn chiếu",
-    "4": "Văn bản liên quan",
-    "9": "Văn bản được hướng dẫn, quy định chi tiết",
-    "10": "Văn bản sửa đổi, bổ sung",
-    "12": "Văn bản thay thế, bãi bỏ, hết hiệu lực",
+    "1": {"outgoing": "Văn bản bị bãi bỏ", "incoming": "Văn bản bãi bỏ"},
+    "2": {"outgoing": "Bản dịch", "incoming": "Bản dịch"},
+    "3": {"outgoing": "Căn cứ ban hành", "incoming": "Văn bản áp dụng"},
+    "4": {"outgoing": "Văn bản được dẫn chiếu", "incoming": "Văn bản dẫn chiếu"},
+    "5": {"outgoing": "Văn bản bị đình chỉ thi hành", "incoming": "Văn bản đình chỉ thi hành"},
+    "6": {"outgoing": "Văn bản được đính chính", "incoming": "Văn bản đính chính"},
+    "7": {"outgoing": "Văn bản được hợp nhất", "incoming": "Văn bản hợp nhất"},
+    "8": {"outgoing": "Văn bản được hướng dẫn áp dụng", "incoming": "Văn bản hướng dẫn áp dụng"},
+    "9": {"outgoing": "Văn bản được quy định chi tiết, hướng dẫn thi hành", "incoming": "Văn bản quy định chi tiết, hướng dẫn thi hành"},
+    "10": {"outgoing": "Văn bản được sửa đổi bổ sung", "incoming": "Văn bản sửa đổi bổ sung"},
+    "11": {"outgoing": "Văn bản bị tạm ngưng hiệu lực", "incoming": "Văn bản tạm ngưng hiệu lực"},
+    "12": {"outgoing": "Văn bản được thay thế", "incoming": "Văn bản thay thế"},
+    "13": {"outgoing": "Văn bản được sửa đổi bổ sung", "incoming": "Văn bản sửa đổi bổ sung"},
+    "14": {"outgoing": "Văn bản được giải thích", "incoming": "Văn bản giải thích"},
+    "15": {"outgoing": "Văn bản được công bố", "incoming": "Văn bản công bố"},
 }
 
 
@@ -346,43 +371,35 @@ def _relationship_graph(diagram: dict, current_doc: dict) -> dict:
     current = {
         "item_id": current_doc.get("id") or "",
         "title": current_doc.get("title") or "",
-        "doc_number": current_doc.get("docNum") or "",
     }
-    nodes = {current["item_id"]: {**current, "role": "current"}}
-    edges = []
-
-    def add_bucket(bucket_name: str, direction: str) -> None:
-        groups = diagram.get(bucket_name) or {}
-        if not isinstance(groups, dict):
-            return
-        for relation_type, docs in groups.items():
-            if not isinstance(docs, list):
-                continue
-            for doc in docs:
-                if not isinstance(doc, dict):
-                    continue
-                ref = _doc_ref(doc)
-                if not ref["item_id"]:
-                    continue
-                nodes.setdefault(ref["item_id"], {**ref, "role": "related"})
-                if direction == "outgoing":
-                    source_id, target_id = current["item_id"], ref["item_id"]
-                else:
-                    source_id, target_id = ref["item_id"], current["item_id"]
-                edges.append(
-                    {
-                        "source_id": source_id,
-                        "target_id": target_id,
-                        "relation_type_code": str(relation_type),
-                        "relation_type": RELATION_TYPE_LABELS.get(str(relation_type), f"Quan hệ loại {relation_type}"),
-                        "source_bucket": bucket_name,
-                    }
-                )
-
-    add_bucket("documentNamesByType", "outgoing")
-    add_bucket("documentNamesBySource", "incoming")
-    return {"nodes": list(nodes.values()), "edges": edges, "raw": diagram}
-
+    
+    relations_summary = []
+    
+    # Process both directions for all 15 relation codes
+    for relation_code, label_data in RELATION_TYPE_LABELS.items():
+        for direction, label in label_data.items():
+            bucket_name = "documentNamesByType" if direction == "outgoing" else "documentNamesBySource"
+            
+            # Find documents for this relation
+            documents = []
+            bucket_data = diagram.get(bucket_name) or {}
+            if isinstance(bucket_data, dict):
+                docs = bucket_data.get(relation_code) or []
+                if isinstance(docs, list):
+                    for doc in docs:
+                        if isinstance(doc, dict):
+                            ref = _doc_ref(doc)
+                            if ref["item_id"]:
+                                documents.append(ref)
+            
+            relations_summary.append({
+                "relation_type_code": relation_code,
+                "direction": direction,
+                "relation_type": label,
+                "documents": documents
+            })
+            
+    return {"current_document": current, "relations": relations_summary, "raw": diagram}
 
 def scrape_document(item_or_url, base_meta: dict | None = None) -> VBDocument | None:
     item_id, item = _extract_item_id(item_or_url, base_meta)
@@ -430,6 +447,7 @@ def scrape_document(item_or_url, base_meta: dict | None = None) -> VBDocument | 
         status=_name(data.get("effStatus")) or data.get("status") or item.get("status", ""),
         issuing_people=issuing_people,
         full_text=full_text,
+        content_html=content_html,
         articles=articles,
         related_docs=_related_docs(data),
         signature=signature,
