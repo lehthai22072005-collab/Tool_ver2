@@ -40,6 +40,7 @@ class VBDocument:
     signature: dict = dc_field(default_factory=dict)
     relationship_graph: dict = dc_field(default_factory=dict)
     content_html: str = ""
+    attached_files: List[str] = dc_field(default_factory=list)
 
     @property
     def url(self) -> str:
