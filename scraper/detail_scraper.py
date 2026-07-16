@@ -38,6 +38,7 @@ class VBDocument:
     related_docs: list[dict] = dc_field(default_factory=list)
     signature: dict = dc_field(default_factory=dict)
     relationship_graph: dict = dc_field(default_factory=dict)
+    content_html: str = ""
 
     @property
     def url(self) -> str:
@@ -338,9 +339,9 @@ def _related_docs(data: dict) -> list[dict]:
         )
     return docs
 
-
 RELATION_TYPE_LABELS = {
     "1": {"outgoing": "Văn bản bị bãi bỏ", "incoming": "Văn bản bãi bỏ"},
+    "2": {"outgoing": "Bản dịch", "incoming": "Bản dịch"},
     "3": {"outgoing": "Căn cứ ban hành", "incoming": "Văn bản áp dụng"},
     "4": {"outgoing": "Văn bản được dẫn chiếu", "incoming": "Văn bản dẫn chiếu"},
     "5": {"outgoing": "Văn bản bị đình chỉ thi hành", "incoming": "Văn bản đình chỉ thi hành"},
@@ -370,50 +371,35 @@ def _relationship_graph(diagram: dict, current_doc: dict) -> dict:
     current = {
         "item_id": current_doc.get("id") or "",
         "title": current_doc.get("title") or "",
-        "doc_number": current_doc.get("docNum") or "",
     }
-    nodes = {current["item_id"]: {**current, "role": "current"}}
-    edges = []
-
-    def add_bucket(bucket_name: str, direction: str) -> None:
-        groups = diagram.get(bucket_name) or {}
-        if not isinstance(groups, dict):
-            return
-        for relation_type, docs in groups.items():
-            if not isinstance(docs, list):
-                continue
-            for doc in docs:
-                if not isinstance(doc, dict):
-                    continue
-                ref = _doc_ref(doc)
-                if not ref["item_id"]:
-                    continue
-                nodes.setdefault(ref["item_id"], {**ref, "role": "related"})
-                if direction == "outgoing":
-                    source_id, target_id = current["item_id"], ref["item_id"]
-                else:
-                    source_id, target_id = ref["item_id"], current["item_id"]
-                
-                label_data = RELATION_TYPE_LABELS.get(str(relation_type), {})
-                if isinstance(label_data, dict):
-                    relation_name = label_data.get(direction, f"Quan hệ loại {relation_type}")
-                else:
-                    relation_name = label_data or f"Quan hệ loại {relation_type}"
-
-                edges.append(
-                    {
-                        "source_id": source_id,
-                        "target_id": target_id,
-                        "relation_type_code": str(relation_type),
-                        "relation_type": relation_name,
-                        "source_bucket": bucket_name,
-                    }
-                )
-
-    add_bucket("documentNamesByType", "outgoing")
-    add_bucket("documentNamesBySource", "incoming")
-    return {"nodes": list(nodes.values()), "edges": edges, "raw": diagram}
-
+    
+    relations_summary = []
+    
+    # Process both directions for all 15 relation codes
+    for relation_code, label_data in RELATION_TYPE_LABELS.items():
+        for direction, label in label_data.items():
+            bucket_name = "documentNamesByType" if direction == "outgoing" else "documentNamesBySource"
+            
+            # Find documents for this relation
+            documents = []
+            bucket_data = diagram.get(bucket_name) or {}
+            if isinstance(bucket_data, dict):
+                docs = bucket_data.get(relation_code) or []
+                if isinstance(docs, list):
+                    for doc in docs:
+                        if isinstance(doc, dict):
+                            ref = _doc_ref(doc)
+                            if ref["item_id"]:
+                                documents.append(ref)
+            
+            relations_summary.append({
+                "relation_type_code": relation_code,
+                "direction": direction,
+                "relation_type": label,
+                "documents": documents
+            })
+            
+    return {"current_document": current, "relations": relations_summary, "raw": diagram}
 
 def scrape_document(item_or_url, base_meta: dict | None = None) -> VBDocument | None:
     item_id, item = _extract_item_id(item_or_url, base_meta)
@@ -461,6 +447,7 @@ def scrape_document(item_or_url, base_meta: dict | None = None) -> VBDocument | 
         status=_name(data.get("effStatus")) or data.get("status") or item.get("status", ""),
         issuing_people=issuing_people,
         full_text=full_text,
+        content_html=content_html,
         articles=articles,
         related_docs=_related_docs(data),
         signature=signature,
