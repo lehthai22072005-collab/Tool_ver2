@@ -17,6 +17,33 @@ def convert_to_docx(vb: VBDocument, out_dir: Path) -> Path:
     # Check document size to prevent freezing on massive tables (e.g. 12MB tariffs)
     is_massive_doc = len(html_str) > 500000
 
+    # 0. FALLBACK DOWNLOADS FOR DOCUMENTS WITHOUT HTML
+    is_empty_html = False
+    if not html_str or not html_str.strip():
+        is_empty_html = True
+    else:
+        # Some API endpoints return empty HTML boilerplate
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(html_str, 'html.parser')
+        body = soup.find('body')
+        if not body or not body.text.strip():
+            is_empty_html = True
+
+    if is_empty_html:
+        try:
+            from exporter.download_utils import process_fallback_downloads
+            logger.info(f"Văn bản {vb.item_id} không có nội dung HTML. Thử tải file đính kèm...")
+            download_path = process_fallback_downloads(vb.item_id, str(out_dir))
+            if download_path:
+                logger.info(f"Đã tạo file từ đính kèm: {download_path}")
+                return Path(download_path)
+            else:
+                logger.warning(f"Không thể tải file đính kèm cho {vb.item_id}")
+                return None
+        except Exception as e:
+            logger.error(f"Fallback download failed: {e}")
+            return None
+
     # 1. ATTEMPT HTMLDOCX FIRST (Perfect visual fidelity for tables and centering)
     if html_str and html_str.strip() and not is_massive_doc:
         try:

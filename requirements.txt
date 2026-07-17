@@ -8,3 +8,7 @@ tqdm
 # Optional for --with-ner
 #torch
 #transformers
+
+pdf2docx
+docxcompose
+PyMuPDF
