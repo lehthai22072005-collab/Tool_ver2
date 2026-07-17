@@ -37,8 +37,12 @@ def convert_to_docx(vb: VBDocument, out_dir: Path) -> Path:
             if download_path:
                 logger.info(f"Đã tạo file từ đính kèm: {download_path}")
                 return Path(download_path)
+            else:
+                logger.warning(f"Không thể tải file đính kèm cho {vb.item_id}")
+                return None
         except Exception as e:
             logger.error(f"Fallback download failed: {e}")
+            return None
 
     # 1. ATTEMPT HTMLDOCX FIRST (Perfect visual fidelity for tables and centering)
     if html_str and html_str.strip() and not is_massive_doc:

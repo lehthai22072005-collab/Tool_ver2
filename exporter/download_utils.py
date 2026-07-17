@@ -78,11 +78,20 @@ def download_file(url: str, out_path: str):
                 lines = r.text.split('\n')
                 for line in lines:
                     if line.startswith('2:T'):
-                        b64_parts = line[3:].split(',', 1)
-                        if len(b64_parts) == 2:
-                            b64 = b64_parts[1].strip("\"'")
-                            data = base64.b64decode(b64)
-                            if len(data) > 0:
+                        b64_raw = line[3:]
+                        import re
+                        match = re.match(r'^([0-9a-fA-F]+),', b64_raw)
+                        if match:
+                            hex_len = match.group(1)
+                            str_len = int(hex_len, 16)
+                            b64 = b64_raw[len(hex_len) + 1 : len(hex_len) + 1 + str_len]
+                        else:
+                            b64 = b64_raw.strip('"\'')
+                            
+                        # Fix missing base64 padding
+                        b64 += "=" * ((4 - len(b64) % 4) % 4)
+                        data = base64.b64decode(b64)
+                        if len(data) > 0:
                                 with open(out_path, 'wb') as f: f.write(data)
                                 return True
         except Exception as e:
