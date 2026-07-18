@@ -2,6 +2,14 @@ from pathlib import Path
 from loguru import logger
 from scraper.detail_scraper import VBDocument
 
+def _strip_inline_data_images(soup):
+    """Remove huge base64 image payloads that make htmldocx/pandoc treat data URLs as filenames."""
+    for tag in soup.find_all(["img", "v:imagedata"]):
+        src = tag.get("src") or tag.get("o:href") or tag.get("href")
+        if isinstance(src, str) and src.strip().lower().startswith("data:image"):
+            tag.decompose()
+
+
 def convert_to_docx(vb: VBDocument, out_dir: Path) -> Path:
     try:
         from docx import Document
@@ -39,10 +47,10 @@ def convert_to_docx(vb: VBDocument, out_dir: Path) -> Path:
                 return Path(download_path)
             else:
                 logger.warning(f"Không thể tải file đính kèm cho {vb.item_id}")
-                return None
         except Exception as e:
             logger.error(f"Fallback download failed: {e}")
-            return None
+
+        logger.warning(f"Không có HTML và không tải được file đính kèm cho {vb.item_id}; tạo DOCX ghi chú để không thiếu file nội dung.")
 
     # 1. ATTEMPT HTMLDOCX FIRST (Perfect visual fidelity for tables and centering)
     if html_str and html_str.strip() and not is_massive_doc:
@@ -58,6 +66,7 @@ def convert_to_docx(vb: VBDocument, out_dir: Path) -> Path:
             soup = BeautifulSoup(html_str, "html.parser")
             for tag in soup.find_all(['v:shape', 'o:p', 'script', 'style', 'iframe']):
                 tag.decompose()
+            _strip_inline_data_images(soup)
                 
             # CRITICAL FIX: Convert CSS 'display: table' to HTML <table> for modern VBPL documents
             import re
@@ -104,7 +113,9 @@ def convert_to_docx(vb: VBDocument, out_dir: Path) -> Path:
     # 2. FALLBACK TO PYPANDOC (Robust structure, but might lose layout tables)
     if html_str and html_str.strip():
         import pypandoc
-        html_content = f"<html><head><meta charset='utf-8'></head><body><h1>{vb.title or vb.doc_number or 'Văn bản'}</h1>{html_str}</body></html>"
+        soup = BeautifulSoup(html_str, "html.parser")
+        _strip_inline_data_images(soup)
+        html_content = f"<html><head><meta charset='utf-8'></head><body><h1>{vb.title or vb.doc_number or 'Văn bản'}</h1>{soup}</body></html>"
         try:
             try:
                 pypandoc.convert_text(html_content, 'docx', format='html', outputfile=str(file_path))
@@ -155,7 +166,15 @@ def convert_to_docx(vb: VBDocument, out_dir: Path) -> Path:
             for line in article.get("content", "").splitlines():
                 if line.strip(): doc.add_paragraph(line.strip())
     else:
-        for line in getattr(vb, "full_text", "").splitlines():
+        full_text = getattr(vb, "full_text", "") or ""
+        if not full_text.strip():
+            full_text = (
+                "Không có nội dung HTML từ API và không tải được file đính kèm.\n"
+                f"Item ID: {vb.item_id or '--'}\n"
+                f"Số hiệu: {vb.doc_number or '--'}\n"
+                f"Tiêu đề: {vb.title or '--'}"
+            )
+        for line in full_text.splitlines():
             if line.strip(): doc.add_paragraph(line.strip())
     doc.save(str(file_path))
     logger.info(f"Đã lưu DOCX (Raw Text): {file_path}")

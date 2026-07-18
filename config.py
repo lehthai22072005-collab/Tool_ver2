@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 BASE_URL = "https://vbpl.vn"
@@ -14,8 +15,8 @@ DEFAULT_PAGE_SIZE = 10
 REQUEST_DELAY = 0
 REQUEST_TIMEOUT = 30
 MAX_RETRIES = 3
-OUTPUT_DIR = "output"
-LOG_DIR = "logs"
+OUTPUT_DIR = os.environ.get("VBPL_OUTPUT_DIR", "output")
+LOG_DIR = os.environ.get("VBPL_LOG_DIR", "logs")
 KNOWN_TOTAL_PAGES = 5530
 
 HEADERS = {

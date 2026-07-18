@@ -105,11 +105,13 @@ def _matches_type(item: dict, type_id: str) -> bool:
 
 def _document_type_filter(type_id: str) -> list[str]:
     type_id = _canonical_type_id(type_id)
-    return DOC_TYPE_API_IDS.get(str(type_id), ["ALL"])
+    if not type_id:
+        return []
+    return DOC_TYPE_API_IDS.get(str(type_id), [])
 
 
 def _list_payload(type_id: str, keyword: str, page: int, page_size: int) -> dict:
-    return {
+    payload = {
         "pageNumber": page,
         "pageSize": page_size,
         "keyword": keyword or "",
@@ -118,11 +120,13 @@ def _list_payload(type_id: str, keyword: str, page: int, page_size: int) -> dict
         "groupVbpl": True,
         "score": False,
         "agencyLevel": "TRUNG_UONG",
-        "docType": _document_type_filter(type_id),
-        "documentType": ["ALL"],
         "searchIn": "title",
         "matchMode": "all_words",
     }
+    doc_type_filter = _document_type_filter(type_id)
+    if doc_type_filter:
+        payload["docType"] = doc_type_filter
+    return payload
 
 
 def get_total_pages(type_id: str = "", keyword: str = "", page_size: int = DEFAULT_PAGE_SIZE) -> tuple[int, int]:

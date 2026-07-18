@@ -68,6 +68,44 @@ def _item_key(item: dict) -> str:
     return item.get("item_id") or item.get("url_toanvan") or item.get("url", "")
 
 
+def _read_exported_item_id(doc_dir: Path) -> str:
+    metadata_path = doc_dir / "thuoc_tinh.json"
+    if not metadata_path.exists():
+        return ""
+    try:
+        payload = json.loads(metadata_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return ""
+    return str((payload.get("metadata") or {}).get("item_id") or "")
+
+
+def _document_folder_name(vb) -> str:
+    raw_num = vb.doc_number
+    if not raw_num or raw_num.strip().lower() == "không số":
+        raw_num = f"Khong_so_{vb.item_id[:8]}"
+    return safe_filename(raw_num)
+
+
+def _document_output_dir(vb, used_folder_names: set[str] | None = None) -> Path:
+    loai_vb = safe_filename(vb.doc_type) if vb.doc_type else "Khac"
+    base_name = _document_folder_name(vb)
+    type_dir = Path(OUTPUT_DIR) / "documents" / loai_vb
+    candidate = type_dir / base_name
+    item_id = str(vb.item_id or "")
+    used_folder_names = used_folder_names if used_folder_names is not None else set()
+
+    existing_item_id = _read_exported_item_id(candidate)
+    if (
+        base_name in used_folder_names
+        or (candidate.exists() and existing_item_id and existing_item_id != item_id)
+    ):
+        suffix = safe_filename(item_id[:12] or vb.title or "duplicate")
+        candidate = type_dir / f"{base_name}__{suffix}"
+
+    used_folder_names.add(candidate.name)
+    return candidate
+
+
 def _ask_yes_no(prompt: str, default: bool = False) -> bool:
     suffix = "Y/n" if default else "y/N"
     while True:
@@ -218,6 +256,7 @@ def run_pipeline(
 
     success = 0
     failed = 0
+    used_folder_names_by_type: dict[str, set[str]] = {}
     for index, item in enumerate(doc_list, start=1):
         key = _item_key(item)
         if key in processed:
@@ -233,22 +272,11 @@ def run_pipeline(
             continue
 
         try:
-            # --- CODE MỚI CẬP NHẬT ---
-            # 1. Lấy tên loại văn bản (Ví dụ: "Bộ luật", "Sắc luật") làm thư mục cha
-            loai_vb = safe_filename(vb.doc_type) if vb.doc_type else "Khac"
-
-            # 2. Xử lý tên thư mục con (Số hiệu) để không bị trùng lặp các văn bản "Không số"
-            raw_num = vb.doc_number
-            if not raw_num or raw_num.strip().lower() == "không số":
-                raw_num = f"Khong_so_{vb.item_id[:8]}"
-
-            safe_num = safe_filename(raw_num)
-
-            # 3. Cấu trúc đường dẫn mới: output/documents/Loại_văn_bản/Số_hiệu/
-            doc_dir = Path(OUTPUT_DIR) / "documents" / loai_vb / safe_num
+            type_key = safe_filename(vb.doc_type) if vb.doc_type else "Khac"
+            used_folder_names = used_folder_names_by_type.setdefault(type_key, set())
+            doc_dir = _document_output_dir(vb, used_folder_names)
             doc_dir.mkdir(parents=True, exist_ok=True)
 
-            # 4. Lưu file Word và 2 file JSON vào folder vừa tạo
             docx_path = convert_to_docx(vb, doc_dir)
             thuoc_tinh_path, luoc_do_path = convert_to_json(vb, doc_dir)
 
@@ -257,8 +285,6 @@ def run_pipeline(
 
             _mark_processed(key)
             success += 1
-            # --- KẾT THÚC CODE MỚI ---
-
         except Exception as exc:
             logger.exception(f"Failed while exporting {key}: {exc}")
             _mark_failed(item, str(exc))
@@ -281,9 +307,7 @@ def run_single_url(url: str, skip_ner: bool = True) -> None:
         return
 
     try:
-        # --- CODE MỚI ĐƯỢC ĐỒNG BỘ ---
-        safe_num = safe_filename(vb.doc_number or vb.item_id or vb.title)
-        doc_dir = Path(OUTPUT_DIR) / "documents" / safe_num
+        doc_dir = _document_output_dir(vb)
         doc_dir.mkdir(parents=True, exist_ok=True)
 
         docx_path = convert_to_docx(vb, doc_dir)
@@ -296,8 +320,6 @@ def run_single_url(url: str, skip_ner: bool = True) -> None:
             logger.info("NER skipped")
 
         logger.info(f"Single document finished: {vb.doc_number or vb.item_id}")
-        # --- KẾT THÚC CODE MỚI ---
-
     except Exception as exc:
         logger.exception(f"Failed while exporting {url}: {exc}")
 
