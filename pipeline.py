@@ -46,6 +46,32 @@ def _load_processed_urls() -> set[str]:
     return {line.strip() for line in PROCESSED_PATH.read_text(encoding="utf-8").splitlines() if line.strip()}
 
 
+def _load_exported_item_ids(doc_type_folders: set[str] | None = None) -> set[str]:
+    documents_dir = Path(OUTPUT_DIR) / "documents"
+    if not documents_dir.exists():
+        return set()
+
+    exported: set[str] = set()
+    if doc_type_folders:
+        metadata_paths = (
+            metadata_path
+            for folder in doc_type_folders
+            for metadata_path in (documents_dir / folder).glob("*/thuoc_tinh.json")
+        )
+    else:
+        metadata_paths = documents_dir.glob("*/*/thuoc_tinh.json")
+
+    for metadata_path in metadata_paths:
+        try:
+            payload = json.loads(metadata_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        item_id = str((payload.get("metadata") or {}).get("item_id") or "")
+        if item_id:
+            exported.add(item_id)
+    return exported
+
+
 def _mark_processed(key: str) -> None:
     PROCESSED_PATH.parent.mkdir(parents=True, exist_ok=True)
     with PROCESSED_PATH.open("a", encoding="utf-8") as handle:
@@ -252,7 +278,21 @@ def run_pipeline(
         ner_model = ViLegalBERTNER()
 
     processed = _load_processed_urls() if resume else set()
-    logger.info(f"Already processed: {len(processed)} document(s)")
+    doc_type_folders = {
+        safe_filename(item.get("doc_type") or "")
+        for item in doc_list
+        if item.get("doc_type")
+    }
+    exported_item_ids = _load_exported_item_ids(doc_type_folders) if resume else set()
+    if processed:
+        stale_processed = processed - exported_item_ids
+        if stale_processed:
+            logger.warning(
+                f"Processed state has {len(stale_processed)} item(s) without exported metadata; "
+                "they will be reprocessed if encountered."
+            )
+        processed = processed & exported_item_ids
+    logger.info(f"Already processed with exported metadata: {len(processed)} document(s)")
 
     success = 0
     failed = 0

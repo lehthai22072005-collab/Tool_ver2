@@ -11,6 +11,7 @@ from loguru import logger
 from config import (
     API_HEADERS,
     API_LIST_URL,
+    ALL_DOC_TYPE_API_IDS,
     BASE_URL,
     DEFAULT_PAGE_SIZE,
     DOC_TYPE_ALIASES,
@@ -106,7 +107,7 @@ def _matches_type(item: dict, type_id: str) -> bool:
 def _document_type_filter(type_id: str) -> list[str]:
     type_id = _canonical_type_id(type_id)
     if not type_id:
-        return []
+        return ALL_DOC_TYPE_API_IDS
     return DOC_TYPE_API_IDS.get(str(type_id), [])
 
 

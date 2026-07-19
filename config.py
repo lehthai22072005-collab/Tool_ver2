@@ -38,15 +38,6 @@ API_HEADERS = {
     "Referer": LIST_URL,
 }
 
-TYPE_ID_NAME_MAP = {
-    "1": ("Hiến pháp", "Luật", "Pháp lệnh"),
-    "2": ("Nghị định",),
-    "3": ("Thông tư",),
-    "4": ("Quyết định",),
-    "5": ("Thông tư liên tịch",),
-    "6": ("Nghị quyết",),
-}
-
 NER_MODEL_NAME = "uitnlp/visobert"
 NER_MAX_LENGTH = 512
 
@@ -137,6 +128,13 @@ DOC_TYPE_API_IDS = {
     "cong_van": ["ecc6bbe0-5d0c-4916-836b-bb2f8146249c"],
     "van_ban_lien_quan": ["e154c97d-d4d8-4968-9b72-feffa38924d5"],
 }
+
+ALL_DOC_TYPE_API_IDS = [
+    doc_type_id
+    for type_id, _ in DOC_TYPE_CHOICES
+    if type_id
+    for doc_type_id in DOC_TYPE_API_IDS[type_id]
+]
 
 DOC_TYPE_ALIASES = {
     "1": "luat",
