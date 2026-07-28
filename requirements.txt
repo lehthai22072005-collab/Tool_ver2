@@ -12,3 +12,16 @@ tqdm
 pdf2docx
 docxcompose
 PyMuPDF
+
+# Stage 2: Vietnamese legal NER
+torch>=2.2,<3
+transformers>=4.44,<5
+accelerate>=0.33,<2
+numpy>=1.26,<3
+pandas>=2.2,<3
+scikit-learn>=1.4,<2
+rapidfuzz>=3.9,<4
+PyYAML>=6,<7
+jsonschema>=4.22,<5
+seqeval>=1.2.2,<2
+pytest>=8,<9

@@ -17,6 +17,22 @@ output/
 logs/
 *.log
 
+# Stage 2 generated data and model caches
+artifacts/
+cache/
+models/
+outputs/
+outputs_gpu*/
+reports/*
+!reports/stage2_report.md
+!reports/dataset_500_validation.json
+!reports/training_history_500.json
+
+# Colab transfer bundles and generated checkpoints
+*.tar.gz
+*.tar.gz.part.*
+configs/*_backup.yaml
+
 # IDE files (VSCode, PyCharm)
 .idea/
 .vscode/

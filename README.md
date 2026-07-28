@@ -63,3 +63,91 @@ Ngay sau khi chạy lệnh ở Bước 2, một menu Hỏi - Đáp tiếng Việ
 - Ấn Enter một lần cuối để đóng cửa sổ.
 
 - Dữ liệu cào được sẽ nằm ngay tại thư mục output/documents/ trên máy thật của bạn.
+
+## Giai đoạn 2 — PhoBERT Legal NER
+
+Pipeline trong `src/` xây dựng tập NER weak-supervision từ Word,
+`thuoc_tinh.json` và `luoc_do.json`, fine-tune `vinai/phobert-base`, suy luận
+văn bản dài bằng sliding window, đánh giá trên tập test theo cấp tài liệu và
+kiểm tra toàn bộ output. Dữ liệu thô trong `output/documents` chỉ được đọc.
+
+### Cài đặt
+
+Python 3.10–3.12 được hỗ trợ. Khuyến nghị môi trường ảo:
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+```
+
+Máy chỉ có CPU nên cài wheel CPU của PyTorch để tiết kiệm dung lượng:
+
+```bash
+.venv/bin/pip install --index-url https://download.pytorch.org/whl/cpu torch
+```
+
+### Chạy toàn bộ
+
+```bash
+.venv/bin/python -m src.run_stage2 \
+  --data-dir output/documents --work-dir . \
+  --auto-train --run-inference --run-evaluation --validate-outputs
+```
+
+Thêm `--limit 20 --max-steps 2` chỉ dành cho smoke test, không phải kết quả
+nghiệm thu. Pipeline mặc định chia theo cấu hình. Baseline 500 tài liệu dùng tỷ
+lệ 300/100/100 theo `document_id`; không chia chunk trước khi split.
+
+### Các lệnh độc lập
+
+```bash
+# Huấn luyện lại
+.venv/bin/python -m src.train --dataset-dir artifacts/dataset_500 \
+  --output-dir models/phobert_legal_ner_gpu_500docs \
+  --config configs/stage2_500.yaml
+
+# Suy luận một file hoặc cả thư mục
+.venv/bin/python -m src.infer --input path/to/file.docx \
+  --model models/phobert_legal_ner_gpu_500docs/best \
+  --output outputs/entities --config configs/stage2_500.yaml
+
+# Đánh giá held-out test
+.venv/bin/python -m src.evaluate --predictions outputs/entities \
+  --ground-truth artifacts/dataset/test.jsonl --output reports/evaluation
+
+# Kiểm tra schema, SHA-256, offset, span và độ phủ input
+.venv/bin/python -m src.validate_outputs --input-dir outputs/entities \
+  --source-dir output/documents --report reports/output_validation.json
+
+# Unit + integration tests
+.venv/bin/python -m pytest
+```
+
+Output theo tài liệu nằm tại `outputs/entities/<document_id>.json`; các bản tổng
+hợp là `outputs/entities.jsonl`, `outputs/entities.csv`,
+`outputs/entity_summary.csv` và `outputs/processing_failures.csv`. Mỗi entity
+có nhãn, text, offset toàn cục, block/paragraph, confidence và các chunk nguồn.
+File `.doc` và `.docx` đều được hỗ trợ; với một file upload đơn lẻ,
+`document_id` là tên file không có phần mở rộng.
+
+Checkpoint GPU hiện tại được fine-tune đủ 5 epoch trên Colab Tesla T4 với 300
+train, 100 validation và 100 test. Checkpoint tốt nhất là epoch 5; validation
+F1 đạt 0,48803. Trên test, precision/recall/F1 lần lượt là
+0,36829/0,85871/0,51549. Model và dataset sinh ra không được commit vì dung
+lượng lớn; xem `reports/training_history_500.json` và làm theo lệnh ở trên để
+tái hiện.
+
+Ngoài các thuộc tính từ `thuoc_tinh.json`, schema hiện có hai nhãn span từ
+`luoc_do.json`: `VAN_BAN_LIEN_QUAN` cho tên văn bản liên quan và
+`LOAI_QUAN_HE_VAN_BAN` cho loại quan hệ. Vì loại quan hệ rất hiếm trong tập
+500 tài liệu, inference dùng PhoBERT làm bộ trích xuất chính và một fallback
+exact-pattern cho các cụm quan hệ pháp lý rõ ràng.
+
+### Giới hạn hiện tại
+
+Ground truth được tạo bằng exact/normalized matching từ JSON nên chỉ học được
+những trường thực sự xuất hiện trong Word. JSON của test không được dùng khi suy
+luận. PhoBERT được thiết kế cho text đã tách từ tiếng Việt; cấu hình mặc định
+hiện giữ nguyên text để bảo toàn offset, và lựa chọn segmentation phải được so
+sánh bằng validation trước khi thay đổi. Fine-tuning/inference đầy đủ trên hơn
+44 nghìn Word cần GPU hoặc thời gian CPU đáng kể.

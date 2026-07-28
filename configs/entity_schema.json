@@ -1,0 +1,267 @@
+{
+  "labels": [
+    {
+      "name": "ATTRIBUTE_JSON_ATTRIBUTES_CHUC_DANH_NGUOI_KY",
+      "source_json_paths": [
+        "attribute_json.attributes.chuc_danh_nguoi_ky"
+      ],
+      "description": "scalar value occurs in document text",
+      "is_span_entity": true,
+      "allow_multiple": false,
+      "allow_nested": false,
+      "normalization_rules": [
+        "unicode_nfc",
+        "whitespace"
+      ],
+      "examples": [
+        "Chủ tịch Quốc hội",
+        "Bộ trưởng",
+        "Đang cập nhật",
+        "Chủ tịch Quốc hội",
+        "Chủ  tịch nước"
+      ]
+    },
+    {
+      "name": "ATTRIBUTE_JSON_ATTRIBUTES_CO_QUAN_BAN_HANH",
+      "source_json_paths": [
+        "attribute_json.attributes.co_quan_ban_hanh"
+      ],
+      "description": "scalar value occurs in document text",
+      "is_span_entity": true,
+      "allow_multiple": false,
+      "allow_nested": false,
+      "normalization_rules": [
+        "unicode_nfc",
+        "whitespace"
+      ],
+      "examples": [
+        "Quốc hội",
+        "Bộ Bưu chính, Viễn thông",
+        "Thủ tướng Chính phủ",
+        "Bộ Tài chính",
+        "Bộ Tài chính"
+      ]
+    },
+    {
+      "name": "ATTRIBUTE_JSON_ATTRIBUTES_LOAI_VAN_BAN",
+      "source_json_paths": [
+        "attribute_json.attributes.loai_van_ban"
+      ],
+      "description": "scalar value occurs in document text",
+      "is_span_entity": true,
+      "allow_multiple": false,
+      "allow_nested": false,
+      "normalization_rules": [
+        "unicode_nfc",
+        "whitespace"
+      ],
+      "examples": [
+        "Bộ luật",
+        "Chỉ thị",
+        "Chỉ thị",
+        "Công văn",
+        "Công văn"
+      ]
+    },
+    {
+      "name": "ATTRIBUTE_JSON_ATTRIBUTES_NGANH",
+      "source_json_paths": [
+        "attribute_json.attributes.nganh"
+      ],
+      "description": "scalar value occurs in document text",
+      "is_span_entity": true,
+      "allow_multiple": false,
+      "allow_nested": false,
+      "normalization_rules": [
+        "unicode_nfc",
+        "whitespace"
+      ],
+      "examples": [
+        "Bưu chính, viễn thông",
+        "Tài nguyên và Môi trường",
+        "Lao động - Thương binh và Xã hội",
+        "Công Thương",
+        "Xây dựng"
+      ]
+    },
+    {
+      "name": "ATTRIBUTE_JSON_ATTRIBUTES_NGAY_BAN_HANH",
+      "source_json_paths": [
+        "attribute_json.attributes.ngay_ban_hanh"
+      ],
+      "description": "scalar value occurs in document text",
+      "is_span_entity": true,
+      "allow_multiple": false,
+      "allow_nested": false,
+      "normalization_rules": [
+        "unicode_nfc",
+        "whitespace"
+      ],
+      "examples": [
+        "2015-11-27",
+        "2005-09-30",
+        "1994-07-05",
+        "1997-11-20",
+        "1991-12-08"
+      ]
+    },
+    {
+      "name": "ATTRIBUTE_JSON_ATTRIBUTES_NGAY_CO_HIEU_LUC",
+      "source_json_paths": [
+        "attribute_json.attributes.ngay_co_hieu_luc"
+      ],
+      "description": "scalar value occurs in document text",
+      "is_span_entity": true,
+      "allow_multiple": false,
+      "allow_nested": false,
+      "normalization_rules": [
+        "unicode_nfc",
+        "whitespace"
+      ],
+      "examples": [
+        "2018-01-01",
+        "2005-10-27",
+        "1994-07-21",
+        "1998-01-01",
+        "2008-09-10"
+      ]
+    },
+    {
+      "name": "ATTRIBUTE_JSON_ATTRIBUTES_NGUOI_KY",
+      "source_json_paths": [
+        "attribute_json.attributes.nguoi_ky"
+      ],
+      "description": "scalar value occurs in document text",
+      "is_span_entity": true,
+      "allow_multiple": false,
+      "allow_nested": false,
+      "normalization_rules": [
+        "unicode_nfc",
+        "whitespace"
+      ],
+      "examples": [
+        "Nguyễn Sinh Hùng",
+        "Đỗ Trung Tá",
+        "Võ Văn Kiệt",
+        "Trương Công Phú",
+        "Lý Tài Luận"
+      ]
+    },
+    {
+      "name": "ATTRIBUTE_JSON_ATTRIBUTES_SO_HIEU",
+      "source_json_paths": [
+        "attribute_json.attributes.so_hieu"
+      ],
+      "description": "scalar value occurs in document text",
+      "is_span_entity": true,
+      "allow_multiple": false,
+      "allow_nested": false,
+      "normalization_rules": [
+        "unicode_nfc",
+        "whitespace"
+      ],
+      "examples": [
+        "100/2015/QH13",
+        "10/2005/CT-BBCVT",
+        "346-TTg",
+        "1850-ÐTPT/TD",
+        "884-TC/HCVX"
+      ]
+    },
+    {
+      "name": "VAN_BAN_LIEN_QUAN",
+      "source_json_paths": [
+        "schema_json.relations[].documents[].title"
+      ],
+      "description": "relation span from luoc_do.json",
+      "is_span_entity": true,
+      "allow_multiple": true,
+      "allow_nested": false,
+      "normalization_rules": [
+        "unicode_nfc",
+        "whitespace"
+      ],
+      "examples": [
+        "Hiến pháp năm 2013",
+        "Thông tư số 64/2020/TT- BCA Quy định quy trình điều tra, giải quyết tai nạn giao thông đường thủy nội địa của lực lượng Cảnh sát giao thông",
+        "Nghị quyết số 12/2025/NQ-HĐND Quy định mức thưởng thành tích trong đấu tranh phòng, chống tội phạm trên địa bàn tỉnh Lào Cai",
+        "Thông tư số 63/2020/TT-BCA Quy định quy trình điều tra, giải quyết tai nạn giao thông đường bộ của lực lượng Cảnh sát giao thông",
+        "Nghị quyết số 10/2018/NQ-HĐND Quy định mức hỗ trợ công trình phúc lợi cho các xã, huyện đạt chuẩn\nnông thôn mới và xã đạt chuẩn nông thôn mớinâng cao, kiểu mẫu\ngiai đoạn 2018-2020 trên địa bàntỉnh Phú"
+      ]
+    },
+    {
+      "name": "LOAI_QUAN_HE_VAN_BAN",
+      "source_json_paths": [
+        "schema_json.relations[].relation_type"
+      ],
+      "description": "relation span from luoc_do.json",
+      "is_span_entity": true,
+      "allow_multiple": true,
+      "allow_nested": false,
+      "normalization_rules": [
+        "unicode_nfc",
+        "whitespace"
+      ],
+      "examples": [
+        "Văn bản bị bãi bỏ",
+        "Văn bản bãi bỏ",
+        "Bản dịch",
+        "Bản dịch",
+        "Căn cứ ban hành"
+      ]
+    }
+  ],
+  "metadata_fields": [
+    "attribute_json.metadata.item_id",
+    "attribute_json.metadata.title",
+    "attribute_json.metadata.url_toanvan",
+    "schema_json.current_document.item_id",
+    "schema_json.current_document.title"
+  ],
+  "ignored_fields": [
+    "attribute_json.attributes.linh_vuc",
+    "attribute_json.attributes.ngay_het_hieu_luc",
+    "attribute_json.attributes.tinh_trang_hieu_luc",
+    "schema_json.raw.documentNamesBySource.10[].id",
+    "schema_json.raw.documentNamesBySource.10[].name",
+    "schema_json.raw.documentNamesBySource.12[].id",
+    "schema_json.raw.documentNamesBySource.12[].name",
+    "schema_json.raw.documentNamesBySource.14[].id",
+    "schema_json.raw.documentNamesBySource.14[].name",
+    "schema_json.raw.documentNamesBySource.1[].id",
+    "schema_json.raw.documentNamesBySource.1[].name",
+    "schema_json.raw.documentNamesBySource.3[].id",
+    "schema_json.raw.documentNamesBySource.3[].name",
+    "schema_json.raw.documentNamesBySource.4[].id",
+    "schema_json.raw.documentNamesBySource.4[].name",
+    "schema_json.raw.documentNamesBySource.7[].id",
+    "schema_json.raw.documentNamesBySource.7[].name",
+    "schema_json.raw.documentNamesBySource.8[].id",
+    "schema_json.raw.documentNamesBySource.8[].name",
+    "schema_json.raw.documentNamesBySource.9[].id",
+    "schema_json.raw.documentNamesBySource.9[].name",
+    "schema_json.raw.documentNamesByType.10[].id",
+    "schema_json.raw.documentNamesByType.10[].name",
+    "schema_json.raw.documentNamesByType.12[].id",
+    "schema_json.raw.documentNamesByType.12[].name",
+    "schema_json.raw.documentNamesByType.1[].id",
+    "schema_json.raw.documentNamesByType.1[].name",
+    "schema_json.raw.documentNamesByType.2[].id",
+    "schema_json.raw.documentNamesByType.2[].name",
+    "schema_json.raw.documentNamesByType.3[].id",
+    "schema_json.raw.documentNamesByType.3[].name",
+    "schema_json.raw.documentNamesByType.4[].id",
+    "schema_json.raw.documentNamesByType.4[].name",
+    "schema_json.raw.documentNamesByType.7[].id",
+    "schema_json.raw.documentNamesByType.7[].name",
+    "schema_json.raw.documentNamesByType.8[].id",
+    "schema_json.raw.documentNamesByType.8[].name",
+    "schema_json.raw.documentNamesByType.9[].id",
+    "schema_json.raw.documentNamesByType.9[].name",
+    "schema_json.relations[].direction",
+    "schema_json.relations[].documents[].item_id",
+    "schema_json.relations[].documents[].url",
+    "schema_json.relations[].relation_type_code"
+  ],
+  "schema_version": "1.0"
+}
